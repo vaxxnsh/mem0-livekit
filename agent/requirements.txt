@@ -1,0 +1,13 @@
+# Core LiveKit dependencies
+livekit-agents[deepgram,google,cartesia,silero,turn-detector]~=1.0
+livekit-plugins-noise-cancellation~=0.2
+
+# Environment and utilities
+python-dotenv>=1.0.0
+
+# Additional dependencies that may be needed
+asyncio-mqtt>=0.16.0
+aiohttp>=3.8.0
+
+# Pin protobuf to be compatible with mem0ai
+protobuf>=5.29.0,<6.0.0
