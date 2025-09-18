@@ -7,7 +7,7 @@ import { THEME_MEDIA_QUERY, THEME_STORAGE_KEY, cn } from '@/lib/utils';
 
 const THEME_SCRIPT = `
   const doc = document.documentElement;
-  const theme = localStorage.getItem("${THEME_STORAGE_KEY}") ?? "system";
+  const theme = localStorage.getItem("${THEME_STORAGE_KEY}") ?? "light";
 
   if (theme === "system") {
     if (window.matchMedia("${THEME_MEDIA_QUERY}").matches) {
