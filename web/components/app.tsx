@@ -10,6 +10,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { Welcome } from '@/components/welcome';
 import useConnectionDetails from '@/hooks/useConnectionDetails';
 import type { AppConfig } from '@/lib/types';
+import UsernameDialog from './username-dialog';
 
 const MotionWelcome = motion.create(Welcome);
 const MotionSessionView = motion.create(SessionView);
@@ -21,8 +22,12 @@ interface AppProps {
 export function App({ appConfig }: AppProps) {
   const room = useMemo(() => new Room(), []);
   const [sessionStarted, setSessionStarted] = useState(false);
+  const [isOpen,setIsOpen] = useState<boolean>(false);
+  const [username, setUsername] = useState<string>("default");
+
+
   const { refreshConnectionDetails, existingOrRefreshConnectionDetails } =
-    useConnectionDetails(appConfig);
+    useConnectionDetails(appConfig,username);
 
   useEffect(() => {
     const onDisconnected = () => {
@@ -82,11 +87,19 @@ export function App({ appConfig }: AppProps) {
       <MotionWelcome
         key="welcome"
         startButtonText={startButtonText}
-        onStartCall={() => setSessionStarted(true)}
+        onStartCall={() => setIsOpen(true)}
         disabled={sessionStarted}
         initial={{ opacity: 1 }}
         animate={{ opacity: sessionStarted ? 0 : 1 }}
         transition={{ duration: 0.5, ease: 'linear', delay: sessionStarted ? 0 : 0.5 }}
+      />
+
+      <UsernameDialog 
+        isOpen={isOpen}
+        setIsOpen={setIsOpen}
+        username={username}
+        setUsername={setUsername}
+        startCall={setSessionStarted}
       />
 
       <RoomContext.Provider value={room}>

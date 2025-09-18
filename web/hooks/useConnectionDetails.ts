@@ -5,7 +5,7 @@ import { AppConfig } from '@/lib/types';
 
 const ONE_MINUTE_IN_MILLISECONDS = 60 * 1000;
 
-export default function useConnectionDetails(appConfig: AppConfig) {
+export default function useConnectionDetails(appConfig: AppConfig,username : string ) {
   // Generate room connection details, including:
   //   - A random Room name
   //   - A random Participant name
@@ -38,6 +38,7 @@ export default function useConnectionDetails(appConfig: AppConfig) {
                 agents: [{ agent_name: appConfig.agentName }],
               }
             : undefined,
+          username : username ?? "default"
         }),
       });
       data = await res.json();
@@ -48,7 +49,7 @@ export default function useConnectionDetails(appConfig: AppConfig) {
 
     setConnectionDetails(data);
     return data;
-  }, []);
+  }, [appConfig.agentName, appConfig.sandboxId, username]);
 
   useEffect(() => {
     fetchConnectionDetails();

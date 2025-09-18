@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import json
 from mem0 import AsyncMemoryClient
 from livekit import agents, rtc
 from livekit.agents import (
@@ -28,7 +29,7 @@ class MemoryEnabledAgent(Agent):
         self._mem0_client = AsyncMemoryClient()
         super().__init__(
             instructions="""
-                You are Sam, a helpful voice and vision assistant with memory capabilities.
+                You are Maria, a helpful voice and vision assistant with memory capabilities.
                 Use past interactions to provide contextually relevant responses.
                 If no relevant context is available, rely on your general knowledge.
             """
@@ -36,8 +37,15 @@ class MemoryEnabledAgent(Agent):
         logger.info(f"Mem0 Agent initialized. Using user_id: {self._user_id}")
     
     async def on_enter(self):
-        room = get_job_context().room
+        ctx = get_job_context()
+        room = ctx.room
         
+        logger.info(f"Room Name: {ctx.room.name}")
+        
+        self._user_id = ctx.room.name.split("-")[1]
+        
+        logger.info(f"user_id set to : {self._user_id}")
+            
         def _image_received_handler(reader, participant_identity):
             task = asyncio.create_task(
                 self._image_received(reader, participant_identity)
@@ -46,6 +54,13 @@ class MemoryEnabledAgent(Agent):
             task.add_done_callback(lambda t: self._tasks.remove(t))
             
         room.register_byte_stream_handler("images", _image_received_handler)
+        
+        logger.info(f"Number of participants: {len(room.remote_participants.values())}")
+        
+        # Log initial participants 
+        for participant in room.remote_participants.values():
+            logger.info(f"Initial participant connected: {participant.identity}")
+
     
         for participant in room.remote_participants.values():
             video_tracks = [
@@ -61,10 +76,21 @@ class MemoryEnabledAgent(Agent):
         def on_track_subscribed(track: rtc.Track, publication: rtc.RemoteTrackPublication, participant: rtc.RemoteParticipant):
             if track.kind == rtc.TrackKind.KIND_VIDEO:
                 self._create_video_stream(track)
+        
+        # Log new participant connections
+        
+        def on_participant_connected(participant: rtc.RemoteParticipant):
+            logger.info(f"Participant connected: {participant.identity}")
+            
+        room.on("participant_connected",on_participant_connected)
+        
+
 
     async def on_user_turn_completed(self, turn_ctx: ChatContext, new_message: ChatMessage) -> None:
-        user_id = "default_user"
+        user_id = self._user_id
         user_text = new_message.text_content
+        
+        
         
         logger.info(f"""
                 After User turn : user_id={user_id} user_text={user_text}
@@ -183,7 +209,11 @@ class MemoryEnabledAgent(Agent):
         await self.update_chat_ctx(chat_ctx)
 
 # --- LiveKit Entrypoint ---
+
 async def entrypoint(ctx: agents.JobContext):
+ 
+    user_id = "default"
+    
     session = AgentSession(
         stt=deepgram.STT(model="nova-3", language="multi"),
         llm=openai.LLM(model="gpt-4o-mini"),
@@ -195,7 +225,7 @@ async def entrypoint(ctx: agents.JobContext):
     await session.start(
         room=ctx.room,
         agent=MemoryEnabledAgent(
-            user_id="default"
+            user_id=user_id  
         ),
         room_input_options=RoomInputOptions(
             noise_cancellation=noise_cancellation.BVC(),
@@ -206,6 +236,7 @@ async def entrypoint(ctx: agents.JobContext):
     await session.generate_reply(
         instructions="Greet the user and let them know you can analyze images they share or their camera feed."
     )
+
 
 
 if __name__ == "__main__":
