@@ -1,8 +1,5 @@
-import logging
 import asyncio
 import base64
-from pathlib import Path
-from dotenv import load_dotenv
 from mem0 import AsyncMemoryClient
 from livekit import agents, rtc
 from livekit.agents import (
@@ -17,14 +14,9 @@ from livekit.agents import (
 )
 from livekit.agents.llm import ImageContent
 from livekit.plugins import openai, silero, deepgram,cartesia, noise_cancellation
-from livekit.agents.utils.images import encode, EncodeOptions, ResizeOptions
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
-
-
-load_dotenv()
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from config import logger
+from utils import frame_to_base64
 
 
 class MemoryEnabledAgent(Agent):
@@ -163,14 +155,8 @@ class MemoryEnabledAgent(Agent):
         
         async def read_stream():
             async for event in self._video_stream:
-                image_bytes = encode(
-                    event.frame,
-                    EncodeOptions(
-                        format="JPEG",
-                        resize_options=ResizeOptions(width=1024, height=1024, strategy="scale_aspect_fit")
-                    )
-                )
-                self._latest_frame = f"data:image/jpeg;base64,{base64.b64encode(image_bytes).decode('utf-8')}"
+                self._latest_frame = frame_to_base64(event.frame)
+
                 
         task = asyncio.create_task(read_stream())
         self._tasks.append(task)
